@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "voice": "af_heart",
+  "speed": 1.0,
+  "player": "mpv",
+  "narrate_tools": true,
+  "narrate_responses": true,
+  "paragraph_pause_ms": 1000
+}

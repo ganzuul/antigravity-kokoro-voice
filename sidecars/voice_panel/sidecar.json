@@ -1,0 +1,19 @@
+{
+  "name": "voice_panel",
+  "command": "python3",
+  "args": ["server.py"],
+  "description": "Kokoro Voice Settings, Audio Player, and Paragraph Playlist",
+  "display_name": "Voice & Audio Player",
+  "has_web_ui": true,
+  "restart_policy": "always",
+  "ui_config": {
+    "display_name": "Voice & Audio Player",
+    "views": [
+      {
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "path": "/ui.html",
+        "title": "Voice & Audio Player"
+      }
+    ]
+  }
+}

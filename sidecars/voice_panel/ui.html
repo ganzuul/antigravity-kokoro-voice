@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice & Audio Player</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #121316;
+      --card: #1a1c23;
+      --border: #2e323f;
+      --foreground: #f1f5f9;
+      --muted-foreground: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --accent: #818cf8;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="p-4 custom-scroll min-h-screen text-xs">
+  <div class="max-w-xl mx-auto space-y-4">
+
+    <!-- Header & Bridge Status -->
+    <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold text-sm">
+          🎙️
+        </div>
+        <div>
+          <h1 class="text-sm font-semibold text-[var(--foreground)]">Kokoro Voice & Playlist</h1>
+          <p class="text-[11px] text-[var(--muted-foreground)]">Paragraph Player & Audio Settings</p>
+        </div>
+      </div>
+      <div id="bridgeStatusBadge" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[11px]">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="bridgeStatusText">Bridge Online</span>
+      </div>
+    </div>
+
+    <!-- Active Paragraph Player Card -->
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-lg space-y-3">
+      <!-- Now Playing Info -->
+      <div class="flex items-start justify-between gap-2">
+        <div class="space-y-1 flex-1">
+          <div class="flex items-center gap-2">
+            <span id="trackBadge" class="px-2 py-0.5 rounded bg-[var(--primary)]/20 text-[var(--primary)] text-[10px] font-medium tracking-wide uppercase">
+              Paragraph 0 of 0
+            </span>
+            <span id="playStateBadge" class="text-[10px] text-[var(--muted-foreground)]">Ready</span>
+          </div>
+          <p id="nowPlayingText" class="text-xs text-[var(--foreground)] font-normal line-clamp-2 italic pr-2">
+            No paragraph selected. Click Repopulate Active or select a track below.
+          </p>
+        </div>
+      </div>
+
+      <!-- Scrubber Timeline -->
+      <div class="space-y-1">
+        <input id="seekBar" type="range" min="0" max="100" value="0" step="0.1" class="w-full h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer accent-[var(--primary)]">
+        <div class="flex justify-between text-[10px] text-[var(--muted-foreground)]">
+          <span id="currentTimeLabel">0:00</span>
+          <span id="durationLabel">0:00</span>
+        </div>
+      </div>
+
+      <!-- Player Controls -->
+      <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center gap-1.5">
+          <!-- Prev Paragraph -->
+          <button id="prevBtn" title="Previous paragraph" class="p-2 rounded-lg border border-[var(--border)] hover:bg-slate-800 text-[var(--foreground)] transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Play/Pause Button -->
+          <button id="playPauseBtn" class="px-4 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-slate-950 font-bold flex items-center gap-1.5 shadow transition">
+            <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+            <svg id="pauseIcon" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+            </svg>
+            <span id="playPauseText">Play</span>
+          </button>
+
+          <!-- Next Paragraph -->
+          <button id="nextBtn" title="Next paragraph" class="p-2 rounded-lg border border-[var(--border)] hover:bg-slate-800 text-[var(--foreground)] transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+
+          <!-- Stop -->
+          <button id="stopBtn" title="Stop playback" class="p-2 rounded-lg border border-[var(--border)] hover:bg-slate-800 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="1"></rect>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Speed & Autoplay options -->
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-1 text-[11px] text-[var(--muted-foreground)] cursor-pointer">
+            <input id="autoNextCheck" type="checkbox" checked class="rounded border-[var(--border)] bg-slate-900 text-[var(--primary)] focus:ring-0">
+            <span>Auto-next</span>
+          </label>
+
+          <select id="speedSelect" class="bg-slate-900 text-[var(--foreground)] border border-[var(--border)] rounded px-2 py-1 text-[11px] focus:outline-none">
+            <option value="0.75">0.75x</option>
+            <option value="1.0" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="1.75">1.75x</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paragraph Playlist -->
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 shadow space-y-2">
+      <!-- Playlist Controls Bar -->
+      <div class="flex flex-col gap-2 pb-2 border-b border-[var(--border)]">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+            <span>📜</span>
+            <span>Message Playlist (<span id="playlistCount">0</span>)</span>
+          </h2>
+          <div class="flex items-center gap-1.5">
+            <button id="clearPlaylistBtn" title="Clear all tracks from the playlist" class="px-2 py-0.5 rounded border border-rose-900/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-[10px] font-medium transition">
+              🗑️ Clear
+            </button>
+            <button id="repopulateActiveBtn" title="Repopulate playlist with active conversation turn" class="px-2 py-0.5 rounded border border-[var(--border)] bg-slate-800 hover:bg-slate-700 text-[var(--foreground)] text-[10px] font-medium flex items-center gap-1 transition">
+              <span>🔄</span>
+              <span>Repopulate Active</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Conversation Selector -->
+        <div class="flex items-center gap-1.5 pt-0.5">
+          <span class="text-[10px] text-[var(--muted-foreground)] shrink-0 font-medium">Conversation:</span>
+          <select id="convSelect" class="flex-1 bg-slate-900 text-[var(--foreground)] border border-[var(--border)] rounded px-2 py-1 text-[10px] truncate focus:outline-none focus:border-[var(--primary)]">
+            <option value="">Latest Active Conversation</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="playlistContainer" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll pr-1">
+        <div class="text-center py-4 text-[var(--muted-foreground)] text-xs">
+          Loading conversation paragraphs...
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Settings Section -->
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow space-y-3">
+      <div class="flex items-center justify-between pb-1 border-b border-[var(--border)]">
+        <h2 class="text-xs font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+          <span>⚙️</span>
+          <span>Voice Configuration</span>
+        </h2>
+        <span id="saveNotice" class="text-[10px] text-emerald-400 opacity-0 transition-opacity font-medium">Saved</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Master Enable -->
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-[var(--border)]">
+          <div>
+            <div class="font-medium text-[11px] text-[var(--foreground)]">Enable Voice</div>
+            <div class="text-[10px] text-[var(--muted-foreground)]">Master audio narration</div>
+          </div>
+          <input id="cfgEnabled" type="checkbox" checked class="w-4 h-4 rounded text-[var(--primary)] bg-slate-800 border-[var(--border)] focus:ring-0">
+        </div>
+
+        <!-- Voice Model -->
+        <div class="p-2 rounded-lg bg-slate-900/60 border border-[var(--border)] space-y-1">
+          <label class="block text-[11px] font-medium text-[var(--foreground)]">Voice Model</label>
+          <select id="cfgVoice" class="w-full bg-slate-800 text-[var(--foreground)] border border-[var(--border)] rounded px-2 py-1 text-[11px] focus:outline-none">
+            <option value="af_heart">Heart (US Female, Warm)</option>
+            <option value="af_bella">Bella (US Female)</option>
+            <option value="af_sky">Sky (US Female, Clear)</option>
+            <option value="af_nicole">Nicole (US Female)</option>
+            <option value="am_adam">Adam (US Male, Deep)</option>
+            <option value="am_michael">Michael (US Male)</option>
+            <option value="am_echo">Echo (US Male)</option>
+            <option value="bf_alice">Alice (UK Female)</option>
+            <option value="bf_emma">Emma (UK Female)</option>
+            <option value="bm_george">George (UK Male)</option>
+          </select>
+        </div>
+
+        <!-- Paragraph Pause Slider -->
+        <div class="col-span-2 p-2.5 rounded-lg bg-slate-900/60 border border-[var(--border)] space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-[11px] text-[var(--foreground)]">Pause Between Paragraphs</div>
+              <div class="text-[10px] text-[var(--muted-foreground)]">Breathing space between tracks in auto-advance</div>
+            </div>
+            <span id="pauseMsLabel" class="font-mono text-xs font-semibold text-[var(--primary)] px-2 py-0.5 rounded bg-slate-800 border border-[var(--border)]">1.0s</span>
+          </div>
+          <input id="cfgPauseMs" type="range" min="0" max="5000" step="250" value="1000" class="w-full h-1 bg-[var(--border)] rounded appearance-none cursor-pointer accent-[var(--primary)]">
+          <div class="flex justify-between text-[9px] text-[var(--muted-foreground)]">
+            <span>0s (Instant)</span>
+            <span>1.0s</span>
+            <span>2.5s</span>
+            <span>5.0s</span>
+          </div>
+        </div>
+
+        <!-- Narrate Tools -->
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-[var(--border)]">
+          <div>
+            <div class="font-medium text-[11px] text-[var(--foreground)]">Narrate Tools</div>
+            <div class="text-[10px] text-[var(--muted-foreground)]">Spoken action updates</div>
+          </div>
+          <input id="cfgNarrateTools" type="checkbox" checked class="w-4 h-4 rounded text-[var(--primary)] bg-slate-800 border-[var(--border)] focus:ring-0">
+        </div>
+
+        <!-- Narrate Responses -->
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-[var(--border)]">
+          <div>
+            <div class="font-medium text-[11px] text-[var(--foreground)]">Narrate Turns</div>
+            <div class="text-[10px] text-[var(--muted-foreground)]">Auto-read final replies</div>
+          </div>
+          <input id="cfgNarrateResponses" type="checkbox" checked class="w-4 h-4 rounded text-[var(--primary)] bg-slate-800 border-[var(--border)] focus:ring-0">
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center justify-between pt-1">
+        <button id="testVoiceBtn" class="px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-slate-800 text-[var(--foreground)] text-[11px] flex items-center gap-1 transition">
+          <span>🔊</span>
+          <span>Test Selected Voice</span>
+        </button>
+        <div class="flex items-center gap-1.5">
+          <button id="wakeBridgeBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[var(--foreground)] text-[11px] transition">
+            Wake Bridge
+          </button>
+          <button id="sleepBridgeBtn" class="px-2.5 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-[var(--muted-foreground)] text-[11px] transition">
+            Sleep Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <audio id="audioElement" class="hidden"></audio>
+
+  <script>
+    // State
+    let playlist = [];
+    let currentIndex = 0;
+    let isPlaying = false;
+    let pauseTimer = null;
+    let config = {};
+    const audio = document.getElementById("audioElement");
+
+    // UI Elements
+    const trackBadge = document.getElementById("trackBadge");
+    const playStateBadge = document.getElementById("playStateBadge");
+    const nowPlayingText = document.getElementById("nowPlayingText");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const playPauseText = document.getElementById("playPauseText");
+    const playIcon = document.getElementById("playIcon");
+    const pauseIcon = document.getElementById("pauseIcon");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const seekBar = document.getElementById("seekBar");
+    const currentTimeLabel = document.getElementById("currentTimeLabel");
+    const durationLabel = document.getElementById("durationLabel");
+    const speedSelect = document.getElementById("speedSelect");
+    const autoNextCheck = document.getElementById("autoNextCheck");
+    const playlistContainer = document.getElementById("playlistContainer");
+    const playlistCount = document.getElementById("playlistCount");
+    const clearPlaylistBtn = document.getElementById("clearPlaylistBtn");
+    const repopulateActiveBtn = document.getElementById("repopulateActiveBtn");
+    const convSelect = document.getElementById("convSelect");
+
+    // Config Elements
+    const cfgEnabled = document.getElementById("cfgEnabled");
+    const cfgVoice = document.getElementById("cfgVoice");
+    const cfgNarrateTools = document.getElementById("cfgNarrateTools");
+    const cfgNarrateResponses = document.getElementById("cfgNarrateResponses");
+    const cfgPauseMs = document.getElementById("cfgPauseMs");
+    const pauseMsLabel = document.getElementById("pauseMsLabel");
+    const testVoiceBtn = document.getElementById("testVoiceBtn");
+    const restartBridgeBtn = document.getElementById("restartBridgeBtn");
+    const saveNotice = document.getElementById("saveNotice");
+
+    function formatTime(sec) {
+      if (!sec || isNaN(sec)) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Load Configuration
+    async function loadConfig() {
+      try {
+        const res = await fetch("/api/config");
+        if (res.ok) {
+          config = await res.json();
+          cfgEnabled.checked = !!config.enabled;
+          cfgVoice.value = config.voice || "af_heart";
+          cfgNarrateTools.checked = !!config.narrate_tools;
+          cfgNarrateResponses.checked = !!config.narrate_responses;
+          if (config.speed) speedSelect.value = String(config.speed);
+          if (config.paragraph_pause_ms !== undefined) {
+            cfgPauseMs.value = String(config.paragraph_pause_ms);
+            pauseMsLabel.textContent = (config.paragraph_pause_ms / 1000).toFixed(1) + "s";
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load config:", e);
+      }
+    }
+
+    // Save Configuration
+    async function saveConfig() {
+      const pauseVal = parseInt(cfgPauseMs.value, 10) || 1000;
+      pauseMsLabel.textContent = (pauseVal / 1000).toFixed(1) + "s";
+
+      const payload = {
+        enabled: cfgEnabled.checked,
+        voice: cfgVoice.value,
+        narrate_tools: cfgNarrateTools.checked,
+        narrate_responses: cfgNarrateResponses.checked,
+        speed: parseFloat(speedSelect.value),
+        paragraph_pause_ms: pauseVal
+      };
+      try {
+        const res = await fetch("/api/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          saveNotice.style.opacity = "1";
+          setTimeout(() => { saveNotice.style.opacity = "0"; }, 1500);
+        }
+      } catch (e) {
+        console.error("Failed to save config:", e);
+      }
+    }
+
+    // Load Available Conversations
+    async function loadConversations() {
+      try {
+        const res = await fetch("/api/conversations");
+        if (res.ok) {
+          const data = await res.json();
+          const convs = data.conversations || [];
+          convSelect.innerHTML = convs.map(c => `
+            <option value="${c.id}" ${c.is_latest ? 'selected' : ''}>
+              ${c.is_latest ? '⭐ [Active] ' : ''}${c.title}
+            </option>
+          `).join("");
+        }
+      } catch (e) {
+        console.error("Failed to load conversations:", e);
+      }
+    }
+
+    // Load Playlist for chosen conversation
+    async function loadPlaylist(convId = null) {
+      if (pauseTimer) {
+        clearTimeout(pauseTimer);
+        pauseTimer = null;
+      }
+
+      playlistContainer.innerHTML = '<div class="text-center py-4 text-[var(--muted-foreground)]">Loading paragraphs...</div>';
+
+      try {
+        const targetId = convId || convSelect.value || "";
+        const url = targetId ? `/api/playlist?conversationId=${encodeURIComponent(targetId)}` : "/api/playlist";
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          playlist = data.paragraphs || [];
+          playlistCount.textContent = playlist.length;
+          renderPlaylist();
+          if (playlist.length > 0) {
+            selectTrack(0, false);
+          } else {
+            trackBadge.textContent = "Paragraph 0 of 0";
+            nowPlayingText.textContent = "No paragraphs found in this conversation turn.";
+            playStateBadge.textContent = "Empty";
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load playlist:", e);
+      }
+    }
+
+    // Clear Playlist
+    function clearPlaylist() {
+      if (pauseTimer) {
+        clearTimeout(pauseTimer);
+        pauseTimer = null;
+      }
+      audio.pause();
+      audio.currentTime = 0;
+      isPlaying = false;
+      playlist = [];
+      currentIndex = 0;
+      playlistCount.textContent = "0";
+      trackBadge.textContent = "Paragraph 0 of 0";
+      nowPlayingText.textContent = "Playlist cleared. Click 'Repopulate Active' to reload.";
+      playStateBadge.textContent = "Cleared";
+      updatePlayState();
+      playlistContainer.innerHTML = '<div class="text-center py-6 text-[var(--muted-foreground)] italic">Playlist is empty. Click "Repopulate Active" to load the current conversation.</div>';
+    }
+
+    // Render Playlist UI
+    function renderPlaylist() {
+      if (playlist.length === 0) {
+        playlistContainer.innerHTML = '<div class="text-center py-6 text-[var(--muted-foreground)] italic">No paragraphs available. Click Repopulate Active.</div>';
+        return;
+      }
+
+      playlistContainer.innerHTML = playlist.map((item, idx) => `
+        <div data-index="${idx}" class="track-row flex items-center justify-between p-2 rounded-lg border transition cursor-pointer ${idx === currentIndex ? 'bg-sky-950/40 border-sky-500/50 text-sky-200' : 'bg-slate-900/50 border-[var(--border)] text-[var(--foreground)] hover:bg-slate-800/60'}">
+          <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+            <span class="w-5 text-center font-mono text-[10px] text-[var(--muted-foreground)]">${idx + 1}</span>
+            <p class="truncate text-[11px]">${item.text}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="status-indicator text-[10px] px-1.5 py-0.5 rounded ${idx === currentIndex && isPlaying ? 'bg-sky-500/20 text-sky-400 font-medium' : 'text-[var(--muted-foreground)]'}">
+              ${idx === currentIndex ? (isPlaying ? 'Playing' : 'Selected') : 'Queued'}
+            </span>
+          </div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".track-row").forEach(row => {
+        row.addEventListener("click", () => {
+          const idx = parseInt(row.dataset.index, 10);
+          selectTrack(idx, true);
+        });
+      });
+    }
+
+    // Select & Play Track
+    async function selectTrack(idx, autoPlay = true) {
+      if (pauseTimer) {
+        clearTimeout(pauseTimer);
+        pauseTimer = null;
+      }
+      if (idx < 0 || idx >= playlist.length) return;
+      currentIndex = idx;
+      const track = playlist[currentIndex];
+
+      trackBadge.textContent = `Paragraph ${currentIndex + 1} of ${playlist.length}`;
+      nowPlayingText.textContent = track.text;
+      renderPlaylist();
+
+      if (autoPlay) {
+        await playCurrent();
+      }
+    }
+
+    // Play Current Paragraph
+    async function playCurrent() {
+      if (!playlist[currentIndex]) return;
+      const track = playlist[currentIndex];
+
+      if (!isBridgeUp) {
+        playStateBadge.textContent = "Waking bridge (~5s)...";
+        playPauseText.textContent = "Waking...";
+      } else {
+        playStateBadge.textContent = "Synthesizing...";
+        playPauseText.textContent = "Loading...";
+      }
+
+      try {
+        const speed = parseFloat(speedSelect.value) || 1.0;
+        const voice = cfgVoice.value || "af_heart";
+
+        const res = await fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: track.text, voice, speed })
+        });
+
+        if (!res.ok) throw new Error("Synthesis error");
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        audio.src = url;
+        audio.playbackRate = 1.0;
+        await audio.play();
+
+        isPlaying = true;
+        updatePlayState();
+      } catch (e) {
+        console.error("Playback error:", e);
+        playStateBadge.textContent = "Error";
+        playPauseText.textContent = "Play";
+      }
+    }
+
+    function updatePlayState() {
+      if (isPlaying) {
+        playIcon.classList.add("hidden");
+        pauseIcon.classList.remove("hidden");
+        playPauseText.textContent = "Pause";
+        playStateBadge.textContent = "Playing";
+      } else {
+        playIcon.classList.remove("hidden");
+        pauseIcon.classList.add("hidden");
+        playPauseText.textContent = "Play";
+        playStateBadge.textContent = playlist.length ? "Paused" : "Ready";
+      }
+      renderPlaylist();
+    }
+
+    // Event Listeners
+    playPauseBtn.addEventListener("click", async () => {
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        updatePlayState();
+      } else {
+        if (pauseTimer) {
+          clearTimeout(pauseTimer);
+          pauseTimer = null;
+          await selectTrack(currentIndex + 1, true);
+        } else if (audio.src && audio.currentTime > 0 && !audio.ended) {
+          audio.play();
+          isPlaying = true;
+          updatePlayState();
+        } else {
+          await playCurrent();
+        }
+      }
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (currentIndex > 0) {
+        selectTrack(currentIndex - 1, true);
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentIndex < playlist.length - 1) {
+        selectTrack(currentIndex + 1, true);
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      if (pauseTimer) {
+        clearTimeout(pauseTimer);
+        pauseTimer = null;
+      }
+      audio.pause();
+      audio.currentTime = 0;
+      isPlaying = false;
+      updatePlayState();
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (!isNaN(audio.duration) && audio.duration > 0) {
+        seekBar.value = (audio.currentTime / audio.duration) * 100;
+        currentTimeLabel.textContent = formatTime(audio.currentTime);
+        durationLabel.textContent = formatTime(audio.duration);
+      }
+    });
+
+    seekBar.addEventListener("input", () => {
+      if (!isNaN(audio.duration)) {
+        audio.currentTime = (seekBar.value / 100) * audio.duration;
+      }
+    });
+
+    // Auto-advance with configurable pause
+    audio.addEventListener("ended", () => {
+      isPlaying = false;
+      updatePlayState();
+
+      if (autoNextCheck.checked && currentIndex < playlist.length - 1) {
+        const pauseMs = parseInt(cfgPauseMs.value, 10) || 0;
+        if (pauseMs > 0) {
+          const pauseSec = (pauseMs / 1000).toFixed(1);
+          playStateBadge.textContent = `Pause (${pauseSec}s)...`;
+          pauseTimer = setTimeout(() => {
+            pauseTimer = null;
+            selectTrack(currentIndex + 1, true);
+          }, pauseMs);
+        } else {
+          selectTrack(currentIndex + 1, true);
+        }
+      }
+    });
+
+    clearPlaylistBtn.addEventListener("click", clearPlaylist);
+    repopulateActiveBtn.addEventListener("click", () => loadPlaylist());
+    convSelect.addEventListener("change", () => loadPlaylist(convSelect.value));
+
+    // Config change listeners
+    [cfgEnabled, cfgVoice, cfgNarrateTools, cfgNarrateResponses, speedSelect].forEach(el => {
+      el.addEventListener("change", saveConfig);
+    });
+    cfgPauseMs.addEventListener("input", () => {
+      const pauseVal = parseInt(cfgPauseMs.value, 10) || 0;
+      pauseMsLabel.textContent = (pauseVal / 1000).toFixed(1) + "s";
+    });
+    cfgPauseMs.addEventListener("change", saveConfig);
+
+    testVoiceBtn.addEventListener("click", async () => {
+      const voice = cfgVoice.value;
+      const speed = parseFloat(speedSelect.value);
+      testVoiceBtn.textContent = "Synthesizing...";
+      try {
+        const res = await fetch("/api/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: `Hello! This is Kokoro text to speech using voice ${voice}.`,
+            voice,
+            speed
+          })
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const testAudio = new Audio(url);
+          testAudio.play();
+        }
+      } finally {
+        testVoiceBtn.innerHTML = "<span>🔊</span><span>Test Selected Voice</span>";
+      }
+    });
+
+    const wakeBridgeBtn = document.getElementById("wakeBridgeBtn");
+    const sleepBridgeBtn = document.getElementById("sleepBridgeBtn");
+
+    wakeBridgeBtn.addEventListener("click", async () => {
+      wakeBridgeBtn.textContent = "Waking...";
+      try {
+        await fetch("/api/start_bridge", { method: "POST" });
+        await checkBridgeStatus();
+      } finally {
+        wakeBridgeBtn.textContent = "Wake Bridge";
+      }
+    });
+
+    sleepBridgeBtn.addEventListener("click", async () => {
+      sleepBridgeBtn.textContent = "Stopping...";
+      try {
+        await fetch("/api/stop_bridge", { method: "POST" });
+        await checkBridgeStatus();
+      } finally {
+        sleepBridgeBtn.textContent = "Sleep Now";
+      }
+    });
+
+    // Check bridge status
+    let isBridgeUp = false;
+    async function checkBridgeStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const data = await res.json();
+        const badge = document.getElementById("bridgeStatusBadge");
+        const txt = document.getElementById("bridgeStatusText");
+        isBridgeUp = !!data.server_running;
+        if (data.server_running) {
+          badge.className = "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[11px]";
+          let remStr = "";
+          if (data.remaining_seconds !== undefined && data.remaining_seconds !== null) {
+            const m = Math.floor(data.remaining_seconds / 60);
+            const s = data.remaining_seconds % 60;
+            remStr = ` (${m}m ${s < 10 ? '0' : ''}${s}s to sleep)`;
+          }
+          txt.textContent = `Bridge Online${remStr}`;
+        } else {
+          badge.className = "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[11px]";
+          txt.textContent = "Bridge Asleep (auto-wakes)";
+        }
+      } catch (e) {}
+    }
+
+    // Init
+    loadConfig();
+    loadConversations();
+    loadPlaylist();
+    checkBridgeStatus();
+    setInterval(checkBridgeStatus, 10000);
+  </script>
+</body>
+</html>

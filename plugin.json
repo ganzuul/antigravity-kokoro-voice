@@ -1,0 +1,9 @@
+{
+  "name": "kokoro-tts-voice",
+  "description": "Voice output and screen reader accessibility powered by local Kokoro TTS, lifecycle hooks, and speech-friendly prompt rules.",
+  "suggestedPrompts": [
+    "Test voice synthesis and screen reader narration",
+    "Toggle spoken narration volume or speed",
+    "Read the latest response summary aloud"
+  ]
+}
