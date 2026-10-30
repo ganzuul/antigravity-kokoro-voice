@@ -150,7 +150,7 @@ def split_into_sentences(text: str, max_chunk_chars: int = 240) -> List[str]:
     return chunks
 
 
-def is_port_open(host: str, port: int, timeout_sec: float = 0.5) -> bool:
+def is_port_open(host: str = KOKORO_HOST, port: int = KOKORO_PORT, timeout_sec: float = 0.5) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout_sec):
             return True

@@ -241,6 +241,8 @@ class VoiceSidecarHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/config":
             ok, res = save_config(data)
             if ok:
+                if res.get("enabled") is False:
+                    voice_core.shutdown_kokoro_server()
                 self.send_json({"status": "saved", "config": res})
             else:
                 self.send_json({"status": "error", "message": res}, code=500)

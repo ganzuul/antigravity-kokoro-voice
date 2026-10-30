@@ -50,8 +50,10 @@ def idle_watchdog():
             os._exit(0)
 
 
-print("[Kokoro Bridge] Initializing Kokoro Pipeline...")
-pipeline = KPipeline(lang_code=LANG_CODE)
+DEVICE = os.environ.get("KOKORO_DEVICE", "cpu")
+
+print(f"[Kokoro Bridge] Initializing Kokoro Pipeline on {DEVICE}...")
+pipeline = KPipeline(lang_code=LANG_CODE, device=DEVICE)
 
 
 @app.route("/status", methods=["GET"])
